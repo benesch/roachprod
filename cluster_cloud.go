@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/roachprod/gce"
 	"github.com/pkg/errors"
 )
 
@@ -183,11 +184,20 @@ func listCloud() (*Cloud, error) {
 	return cloud, nil
 }
 
-func createCluster(name string, nodes int, opts VMOpts) error {
-	vmNames := make([]string, nodes, nodes)
+// roundUp rounds n up to the nearest multiple of m. m must not be zero.
+func roundUp(n, m int) int {
+	if m < 0 {
+		m *= -1
+	}
+	return (n + m - 1) / m * m
+}
+
+func createCluster(name string, nodes int, vmTemplate gce.VM) error {
+	vms := make([]gce.VM, nodes)
 	for i := 0; i < nodes; i++ {
-		// Start instance indexing at 1.
-		vmNames[i] = fmt.Sprintf("%s-%0.4d", name, i+1)
+		vms[i] = vmTemplate
+		vms[i].Name = fmt.Sprintf("%s-%0.4d", name, i+1) // start instance indexing at 1
+		vms[i].Zone = zones[roundUp(nodes, len(zones))/len(zones)]
 	}
 
 	return createVMs(vmNames, opts)

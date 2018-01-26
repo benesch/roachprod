@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/roachprod/gce"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -251,7 +252,7 @@ func verifyClusterName(clusterName string) (string, error) {
 	return clusterName, nil
 }
 
-var createVMOpts VMOpts
+var createVMTemplate gce.VM
 
 var createCmd = &cobra.Command{
 	Use:   "create <cluster id>",
@@ -282,7 +283,7 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("cluster %s already exists", clusterName)
 		}
 
-		if err := createCluster(clusterName, numNodes, createVMOpts); err != nil {
+		if err := createCluster(clusterName, numNodes, createVMTemplate); err != nil {
 			return err
 		}
 

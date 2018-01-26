@@ -11,33 +11,23 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// VMOpts is the set of options when creating VMs.
+// VM represents a Google Compute Engine virtual machine.
 type VM struct {
-	UseLocalSSD bool
+	Name        string
 	Lifetime    time.Duration
 	MachineType string
-	Zones       string
+	LocalSSD    bool
+	Zone        string
 }
 
 // CreateVMs creates the specified virtual machines.
-func CreateVMs(names []string, opts VMOpts) error {
+func (c *Client) CreateVMs(vms []VM) error {
 	// Create GCE startup script file.
 	filename, err := writeStartupScript()
 	if err != nil {
 		return errors.Wrapf(err, "could not write GCE startup script to temp file")
 	}
 	defer os.Remove(filename)
-
-	if !opts.GeoDistributed {
-		zones = []string{zones[0]}
-	}
-
-	totalNodes := float64(len(names))
-	totalZones := float64(len(zones))
-	nodesPerZone := int(math.Ceil(totalNodes / totalZones))
-
-	ct := int(0)
-	i := 0
 
 	// Fixed args.
 	args := []string{
@@ -93,13 +83,18 @@ func CreateVMs(names []string, opts VMOpts) error {
 	return g.Wait()
 }
 
-func ListVMs() ([]jsonVM, error) {
+func ListVMs() ([]VM, error) {
 	args := []string{"compute", "instances", "list", "--project", project, "--format", "json"}
-	vms := make([]jsonVM, 0)
+	vms := []jsonVM{}
 
 	if err := runJSONCommand(args, &vms); err != nil {
 		return nil, err
 	}
+
+	for _, vms := range vms {
+
+	}
+
 	return vms, nil
 }
 
@@ -135,7 +130,7 @@ func DeleteVMs(names []string, zones []string) error {
 	return g.Wait()
 }
 
-func ExtendVM(name string, zone string, lifetime time.Duration) error {
+func ExtendVM(name string, lifetime time.Duration) error {
 	args := []string{"compute", "instances", "add-labels"}
 
 	args = append(args, "--project", project)
@@ -164,22 +159,4 @@ type jsonVM struct {
 		}
 	}
 	Zone string
-}
-
-type JsonVMList []jsonVM
-
-func (vms JsonVMList) Names() []string {
-	ret := make([]string, len(vms))
-	for i, vm := range vms {
-		ret[i] = vm.Name
-	}
-	return ret
-}
-
-func (vms JsonVMList) Zones() []string {
-	ret := make([]string, len(vms))
-	for i, vm := range vms {
-		ret[i] = vm.Zone
-	}
-	return ret
 }
