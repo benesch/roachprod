@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"math"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"math"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -48,7 +49,7 @@ type jsonVM struct {
 	Labels            map[string]string
 	CreationTimestamp time.Time
 	NetworkInterfaces []struct {
-		NetworkIP string
+		NetworkIP     string
 		AccessConfigs []struct {
 			Name  string
 			NatIP string
@@ -103,7 +104,7 @@ func findActiveAccount() (string, error) {
 	}
 
 	if !strings.HasSuffix(accounts[0].Account, domain) {
-		return "", fmt.Errorf("active account %q does no belong to domain %s", accounts[0].Account, domain)
+		log.Printf("active account %q does not belong to domain %s", accounts[0].Account, domain)
 	}
 
 	username := strings.Split(accounts[0].Account, "@")[0]
@@ -128,7 +129,6 @@ func createVMs(names []string, opts VMOpts) error {
 
 	ct := int(0)
 	i := 0
-
 
 	// Fixed args.
 	args := []string{
